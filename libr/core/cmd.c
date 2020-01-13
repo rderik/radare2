@@ -80,6 +80,11 @@ R_API void r_load_panels_layout(RCore *core, const char *_name);
 
 static int r_core_cmd_subst_i(RCore *core, char *cmd, char* colon, bool *tmpseek);
 
+static int bb_cmpaddr(const void *_a, const void *_b) {
+	const RAnalBlock *a = _a, *b = _b;
+	return a->addr > b->addr ? 1 : (a->addr < b->addr ? -1 : 0);
+}
+
 static void cmd_debug_reg(RCore *core, const char *str);
 #include "cmd_quit.c"
 #include "cmd_hash.c"
@@ -3884,7 +3889,7 @@ R_API int r_core_cmd_foreach3(RCore *core, const char *cmd, char *each) { // "@@
 				}
 				if (!filter || r_str_glob (fcn->name, filter)) {
 					r_core_seek (core, fcn->addr, 1);
-					r_core_block_size (core, r_anal_fcn_size (fcn));
+					r_core_block_size (core, r_anal_function_linear_size (fcn));
 					r_core_cmd0 (core, cmd);
 				}
 			}
@@ -4022,7 +4027,7 @@ R_API int r_core_cmd_foreach(RCore *core, const char *cmd, char *each) {
 		{
 			RListIter *iter;
 			RAnalBlock *bb;
-			RAnalFunction *fcn = r_anal_get_fcn_at (core->anal, core->offset, 0);
+			RAnalFunction *fcn = r_anal_get_function_at (core->anal, core->offset);
 			int bs = core->blocksize;
 			if (fcn) {
 				r_list_sort (fcn->bbs, bb_cmp);
@@ -4069,7 +4074,7 @@ R_API int r_core_cmd_foreach(RCore *core, const char *cmd, char *each) {
 			RListIter *iter;
 			RAnalBlock *bb;
 			int i;
-			RAnalFunction *fcn = r_anal_get_fcn_at (core->anal, core->offset, 0);
+			RAnalFunction *fcn = r_anal_get_function_at (core->anal, core->offset);
 			if (fcn) {
 				r_list_sort (fcn->bbs, bb_cmp);
 				r_list_foreach (fcn->bbs, iter, bb) {

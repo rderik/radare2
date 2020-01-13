@@ -453,6 +453,11 @@ static void type_match(RCore *core, ut64 addr, char *fcn_name, ut64 baddr, const
 	r_cons_break_pop ();
 }
 
+static int bb_cmpaddr(const void *_a, const void *_b) {
+	const RAnalBlock *a = _a, *b = _b;
+	return a->addr > b->addr ? 1 : (a->addr < b->addr ? -1 : 0);
+}
+
 R_API void r_core_anal_type_match(RCore *core, RAnalFunction *fcn) {
 	RAnalBlock *bb;
 	RListIter *it;
@@ -503,6 +508,7 @@ R_API void r_core_anal_type_match(RCore *core, RAnalFunction *fcn) {
 		return;
 	}
 	r_cons_break_push (NULL, NULL);
+	r_list_sort (fcn->bbs, bb_cmpaddr); // TODO: The algorithm can be more accurate if blocks are followed by their jmp/fail, not just by address
 	r_list_foreach (fcn->bbs, it, bb) {
 		ut64 addr = bb->addr;
 		int i = 0;
@@ -685,7 +691,7 @@ R_API void r_core_anal_type_match(RCore *core, RAnalFunction *fcn) {
 						if (!jmp_op) {
 							break;
 						}
-						if ((jmp_op->type == R_ANAL_OP_TYPE_RET && r_anal_bb_is_in_offset (jmpbb, jmp_addr))
+						if ((jmp_op->type == R_ANAL_OP_TYPE_RET && r_anal_block_contains (jmpbb, jmp_addr))
 								|| jmp_op->type == R_ANAL_OP_TYPE_CJMP) {
 							jmp = true;
 							r_anal_op_free (jmp_op);

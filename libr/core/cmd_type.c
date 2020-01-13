@@ -879,6 +879,7 @@ R_API void r_core_link_stroff(RCore *core, RAnalFunction *fcn) {
 	r_config_set_i (core->config, "dbg.follow", 0);
 	ut64 oldoff = core->offset;
 	r_cons_break_push (NULL, NULL);
+	r_list_sort (fcn->bbs, bb_cmpaddr); // TODO: The algorithm can be more accurate if blocks are followed by their jmp/fail, not just by address
 	r_list_foreach (fcn->bbs, it, bb) {
 		ut64 at = bb->addr;
 		ut64 to = bb->addr + bb->size;
@@ -1368,7 +1369,7 @@ static int cmd_type(void *data, const char *input) {
 		switch (input[1]) {
 		case '.': // "tx." type xrefs 
 		case 'f': // "txf" type xrefs 
-			fcn  = r_anal_get_fcn_at (core->anal, core->offset, 0);
+			fcn  = r_anal_get_function_at (core->anal, core->offset);
 			if (fcn) {
 				RList *uniq = r_anal_types_from_fcn (core->anal, fcn);
 				r_list_foreach (uniq , iter , type) {
