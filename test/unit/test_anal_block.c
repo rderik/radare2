@@ -330,6 +330,48 @@ bool test_r_anal_block_delete() {
 	mu_end;
 }
 
+bool test_r_anal_block_set_size() {
+	RAnal *anal = r_anal_new ();
+	assert_invariants (anal);
+
+	RAnalFunction *fcn = r_anal_create_function (anal, "bbowner", 0x1337, 0, NULL);
+
+	RAnalBlock *block = r_anal_create_block (anal, 0x1337, 42);
+	assert_invariants (anal);
+
+	r_anal_function_add_block (fcn, block);
+	assert_invariants (anal);
+	mu_assert_eq (block->ref, 2, "refs after adding");
+	mu_assert_eq (r_list_length (fcn->bbs), 1, "fcn bbs after add");
+	mu_assert_eq (r_list_length (block->fcns), 1, "bb fcns after add");
+
+	r_anal_block_set_size (block, 300);
+	assert_invariants (anal);
+	mu_assert_eq (block->size, 300, "size after set_size");
+
+	RAnalBlock *second = r_anal_create_block (anal, 0x1337+300, 100);
+	assert_invariants (anal);
+	r_anal_function_add_block (fcn, block);
+	assert_invariants (anal);
+	r_anal_function_linear_size (fcn); // trigger lazy calculation of min/max cache
+	assert_invariants (anal);
+
+	r_anal_block_set_size (second, 500);
+	assert_invariants (anal);
+	mu_assert_eq (second->size, 500, "size after set_size");
+
+	r_anal_block_set_size (block, 80);
+	assert_invariants (anal);
+	mu_assert_eq (block->size, 80, "size after set_size");
+
+	r_anal_block_unref (block);
+	r_anal_block_unref (second);
+	assert_invariants (anal);
+
+	r_anal_free (anal);
+	mu_end;
+}
+
 int all_tests() {
 	mu_run_test (test_r_anal_block_create);
 	mu_run_test (test_r_anal_block_contains);
@@ -338,6 +380,7 @@ int all_tests() {
 	mu_run_test (test_r_anal_block_merge);
 	mu_run_test (test_r_anal_block_merge_in_function);
 	mu_run_test (test_r_anal_block_delete);
+	mu_run_test (test_r_anal_block_set_size);
 	return tests_passed != tests_run;
 }
 
