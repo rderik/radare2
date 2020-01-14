@@ -2538,11 +2538,11 @@ static bool __setFunctionName(RCore *core, ut64 addr, const char *_name, bool pr
 	// RAnalFunction *fcn = r_anal_get_fcn_in (core->anal, addr, R_ANAL_FCN_TYPE_ANY);
 	RAnalFunction *fcn = r_anal_get_function_at (core->anal, addr);
 	if (fcn) {
-		free (fcn->name);
-		fcn->name = name;
+		r_anal_function_rename (fcn, name);
 		if (core->anal->cb.on_fcn_rename) {
 			core->anal->cb.on_fcn_rename (core->anal, core->anal->user, fcn, name);
 		}
+		free (name);
 		return true;
 	}
 	free (name);
