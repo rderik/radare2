@@ -223,11 +223,77 @@ bool test_r_anal_block_split_in_function() {
 	mu_end;
 }
 
-bool test_r_anal_block_resize_atomic(void) {
+bool test_r_anal_block_merge() {
 	RAnal *anal = r_anal_new ();
 	assert_invariants (anal);
 
-	// TODO
+	RAnalBlock *first = r_anal_create_block (anal, 0x1337, 42);
+	RAnalBlock *second = r_anal_create_block (anal, 0x1337 + 42, 624);
+	assert_invariants (anal);
+	mu_assert_eq (blocks_count (anal), 2, "count after create");
+	second->jump = 0xdeadbeef;
+	second->fail = 0xc0ffee;
+
+	first->ninstr = 3;
+	r_anal_bb_set_offset (first, 0, 0);
+	r_anal_bb_set_offset (first, 1, 13);
+	r_anal_bb_set_offset (first, 2, 16);
+
+	second->ninstr = 4;
+	r_anal_bb_set_offset (second, 0, 0);
+	r_anal_bb_set_offset (second, 1, 4);
+	r_anal_bb_set_offset (second, 2, 9);
+	r_anal_bb_set_offset (second, 3, 30);
+
+	bool success = r_anal_block_merge (first, second);
+	mu_assert ("merge success", success);
+	mu_assert_eq (blocks_count (anal), 1, "count after merge");
+	mu_assert_eq (first->addr, 0x1337, "addr after merge");
+	mu_assert_eq (first->size, 666, "size after merge");
+	mu_assert_eq (first->jump, 0xdeadbeef, "jump after merge");
+	mu_assert_eq (first->fail, 0xc0ffee, "fail after merge");
+
+	mu_assert_eq (first->ninstr, 3+4, "ninstr after merge");
+	mu_assert_eq (r_anal_bb_offset_inst (first, 0), 0, "offset 0 after merge");
+	mu_assert_eq (r_anal_bb_offset_inst (first, 1), 13, "offset 1 after merge");
+	mu_assert_eq (r_anal_bb_offset_inst (first, 2), 16, "offset 2 after merge");
+	mu_assert_eq (r_anal_bb_offset_inst (first, 3), 42+0, "offset 3 after merge");
+	mu_assert_eq (r_anal_bb_offset_inst (first, 4), 42+4, "offset 4 after merge");
+	mu_assert_eq (r_anal_bb_offset_inst (first, 5), 42+9, "offset 5 after merge");
+	mu_assert_eq (r_anal_bb_offset_inst (first, 6), 42+30, "offset 6 after merge");
+
+	r_anal_block_unref (first);
+	// second must be already freed by the merge!
+
+	assert_invariants (anal);
+	r_anal_free (anal);
+	mu_end;
+}
+
+bool test_r_anal_block_merge_in_function() {
+	RAnal *anal = r_anal_new ();
+	assert_invariants (anal);
+
+	RAnalFunction *fcn = r_anal_create_function (anal, "bbowner", 0x1337, 0, NULL);
+
+	RAnalBlock *first = r_anal_create_block (anal, 0x1337, 42);
+	RAnalBlock *second = r_anal_create_block (anal, 0x1337 + 42, 624);
+	assert_invariants (anal);
+	mu_assert_eq (blocks_count (anal), 2, "count after create");
+
+	r_anal_function_add_block (fcn, first);
+	r_anal_function_add_block (fcn, second);
+
+	bool success = r_anal_block_merge (first, second);
+	mu_assert ("merge success", success);
+	mu_assert_eq (blocks_count (anal), 1, "count after merge");
+	mu_assert_eq (r_list_length (fcn->bbs), 1, "fcn bbs after merge");
+	mu_assert_eq (r_list_length (first->fcns), 1, "bb functions after merge");
+	mu_assert ("function has merged block", r_list_contains (fcn->bbs, first));
+	mu_assert ("merged block is in function", r_list_contains (first->fcns, fcn));
+
+	r_anal_block_unref (first);
+	// second must be already freed by the merge!
 
 	assert_invariants (anal);
 	r_anal_free (anal);
@@ -239,7 +305,8 @@ int all_tests() {
 	mu_run_test (test_r_anal_block_contains);
 	mu_run_test (test_r_anal_block_split);
 	mu_run_test (test_r_anal_block_split_in_function);
-	mu_run_test (test_r_anal_block_resize_atomic);
+	mu_run_test (test_r_anal_block_merge);
+	mu_run_test (test_r_anal_block_merge_in_function);
 	return tests_passed != tests_run;
 }
 
