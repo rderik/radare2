@@ -143,6 +143,8 @@ bool test_r_anal_block_split() {
 	RAnalBlock *block = r_anal_create_block (anal, 0x1337, 42);
 	assert_invariants (anal);
 	mu_assert_eq (blocks_count (anal), 1, "count after create");
+	block->jump = 0xdeadbeef;
+	block->fail = 0xc0ffee;
 
 	RAnalBlock *second = r_anal_block_split (block, 0x1337);
 	assert_invariants (anal);
@@ -161,7 +163,12 @@ bool test_r_anal_block_split() {
 	mu_assert_eq (second->addr, 0x1339, "first addr after split");
 	mu_assert_eq (second->size, 40, "first size after split");
 
-	// TODO: test jump/fail, instructions
+	mu_assert_eq (block->jump, second->addr, "first jump");
+	mu_assert_eq (block->fail, UT64_MAX, "first fail");
+	mu_assert_eq (second->jump, 0xdeadbeef, "second jump");
+	mu_assert_eq (second->fail, 0xc0ffee, "second fail");
+
+	// TODO: test instructions
 
 	r_anal_block_unref (block);
 	r_anal_block_unref (second);
