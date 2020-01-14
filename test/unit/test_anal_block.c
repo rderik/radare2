@@ -138,13 +138,17 @@ bool test_r_anal_block_split() {
 	RAnal *anal = r_anal_new ();
 	assert_invariants (anal);
 
-	// TODO: check block in fcn!
-
 	RAnalBlock *block = r_anal_create_block (anal, 0x1337, 42);
 	assert_invariants (anal);
 	mu_assert_eq (blocks_count (anal), 1, "count after create");
 	block->jump = 0xdeadbeef;
 	block->fail = 0xc0ffee;
+	block->ninstr = 5;
+	r_anal_bb_set_offset (block, 0, 0);
+	r_anal_bb_set_offset (block, 1, 1);
+	r_anal_bb_set_offset (block, 2, 2);
+	r_anal_bb_set_offset (block, 3, 4);
+	r_anal_bb_set_offset (block, 4, 30);
 
 	RAnalBlock *second = r_anal_block_split (block, 0x1337);
 	assert_invariants (anal);
@@ -168,7 +172,48 @@ bool test_r_anal_block_split() {
 	mu_assert_eq (second->jump, 0xdeadbeef, "second jump");
 	mu_assert_eq (second->fail, 0xc0ffee, "second fail");
 
-	// TODO: test instructions
+	mu_assert_eq (block->ninstr, 2, "first ninstr after split");
+	mu_assert_eq (r_anal_bb_offset_inst (block, 0), 0, "first op_pos[0]");
+	mu_assert_eq (r_anal_bb_offset_inst (block, 1), 1, "first op_pos[1]");
+
+	mu_assert_eq (second->ninstr, 3, "second ninstr after split");
+	mu_assert_eq (r_anal_bb_offset_inst (second, 0), 0, "second op_pos[0]");
+	mu_assert_eq (r_anal_bb_offset_inst (second, 1), 2, "second op_pos[1]");
+	mu_assert_eq (r_anal_bb_offset_inst (second, 2), 28, "second op_pos[2]");
+
+	r_anal_block_unref (block);
+	r_anal_block_unref (second);
+
+	assert_leaks (anal);
+	r_anal_free (anal);
+	mu_end;
+}
+
+bool test_r_anal_block_split_in_function() {
+	RAnal *anal = r_anal_new ();
+	assert_invariants (anal);
+
+	RAnalFunction *fcn = r_anal_create_function (anal, "bbowner", 0x1337, 0, NULL);
+	assert_invariants (anal);
+
+	RAnalBlock *block = r_anal_create_block (anal, 0x1337, 42);
+	assert_invariants (anal);
+	mu_assert_eq (blocks_count (anal), 1, "count after create");
+	r_anal_function_add_block (fcn, block);
+	assert_invariants (anal);
+	mu_assert_eq (block->ref, 2, "block refs after adding to function");
+
+	RAnalBlock *second = r_anal_block_split (block, 0x1339);
+	assert_invariants (anal);
+	mu_assert_ptrneq (second, block, "non-nop split");
+	mu_assert_eq (blocks_count (anal), 2, "count after non-nop split");
+	mu_assert_eq (block->ref, 2, "first block refs after adding to function");
+	mu_assert_eq (second->ref, 2, "second block refs after adding to function");
+
+	mu_assert ("function has first block after split", r_list_contains (fcn->bbs, block));
+	mu_assert ("function has second block after split", r_list_contains (fcn->bbs, second));
+	mu_assert ("second block is in function after split", r_list_contains (block->fcns, fcn));
+	mu_assert ("second block is in function after split", r_list_contains (second->fcns, fcn));
 
 	r_anal_block_unref (block);
 	r_anal_block_unref (second);
@@ -193,6 +238,7 @@ int all_tests() {
 	mu_run_test (test_r_anal_block_create);
 	mu_run_test (test_r_anal_block_contains);
 	mu_run_test (test_r_anal_block_split);
+	mu_run_test (test_r_anal_block_split_in_function);
 	mu_run_test (test_r_anal_block_resize_atomic);
 	return tests_passed != tests_run;
 }
