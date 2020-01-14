@@ -1451,13 +1451,9 @@ R_API RAnalBlock *r_anal_block_split(RAnalBlock *bb, ut64 addr);
 // returns true iff the blocks could be merged
 R_API bool r_anal_block_merge(RAnalBlock *a, RAnalBlock *b);
 
-// Create one block covering the given range.
-// This will fail if the range overlaps any existing blocks.
-R_API RAnalBlock *r_anal_create_block(RAnal *anal, ut64 addr, ut64 size);
-
 // Manually delete a block and remove it from all its functions
 // If there are more references to it than from its functions only, it will not be removed immediately!
-R_API void r_anal_block_delete(RAnalBlock *bb);
+R_API void r_anal_delete_block(RAnalBlock *bb);
 
 R_API void r_anal_block_set_size(RAnalBlock *block, ut64 size);
 

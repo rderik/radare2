@@ -303,7 +303,7 @@ R_API RAnalBlock *r_anal_create_block(RAnal *anal, ut64 addr, ut64 size) {
 	return block;
 }
 
-R_API void r_anal_block_delete(RAnalBlock *bb) {
+R_API void r_anal_delete_block(RAnalBlock *bb) {
 	RAnal *anal = bb->anal;
 	r_anal_block_ref (bb);
 	while (!r_list_empty (bb->fcns)) {

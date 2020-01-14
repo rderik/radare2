@@ -1464,7 +1464,7 @@ R_API bool r_anal_fcn_add_bb(RAnal *a, RAnalFunction *fcn, ut64 addr, ut64 size,
 
 	RAnalBlock *block = r_anal_get_block_at (a, addr);
 	if (block) {
-		r_anal_block_delete (block);
+		r_anal_delete_block (block);
 		block = NULL;
 	}
 

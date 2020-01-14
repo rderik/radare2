@@ -5,14 +5,12 @@ static bool check_invariants(RAnal *anal) {
 	RBIter iter;
 	RAnalBlock *block;
 	ut64 last_start = UT64_MAX;
-	ut64 last_end = 0;
 	r_rbtree_foreach (anal->bb_tree, iter, block, RAnalBlock, _rb) {
 		if (last_start != UT64_MAX) {
 			mu_assert ("corrupted binary tree", block->addr >= last_start);
 			mu_assert_neq (block->addr, last_start, "double blocks");
 		}
 		last_start = block->addr;
-		last_end = block->addr + block->size;
 
 		mu_assert ("block->ref < 1, but it is still in the tree", block->ref >= 1);
 		mu_assert ("block->ref < r_list_length (block->fcns)", block->ref >= r_list_length (block->fcns));
@@ -246,6 +244,7 @@ bool test_r_anal_block_merge() {
 	r_anal_bb_set_offset (second, 3, 30);
 
 	bool success = r_anal_block_merge (first, second);
+	assert_invariants (anal);
 	mu_assert ("merge success", success);
 	mu_assert_eq (blocks_count (anal), 1, "count after merge");
 	mu_assert_eq (first->addr, 0x1337, "addr after merge");
@@ -282,9 +281,12 @@ bool test_r_anal_block_merge_in_function() {
 	mu_assert_eq (blocks_count (anal), 2, "count after create");
 
 	r_anal_function_add_block (fcn, first);
+	assert_invariants (anal);
 	r_anal_function_add_block (fcn, second);
+	assert_invariants (anal);
 
 	bool success = r_anal_block_merge (first, second);
+	assert_invariants (anal);
 	mu_assert ("merge success", success);
 	mu_assert_eq (blocks_count (anal), 1, "count after merge");
 	mu_assert_eq (r_list_length (fcn->bbs), 1, "fcn bbs after merge");
@@ -300,6 +302,34 @@ bool test_r_anal_block_merge_in_function() {
 	mu_end;
 }
 
+bool test_r_anal_block_delete() {
+	RAnal *anal = r_anal_new ();
+	assert_invariants (anal);
+
+	RAnalFunction *fcn = r_anal_create_function (anal, "bbowner", 0x1337, 0, NULL);
+
+	RAnalBlock *block = r_anal_create_block (anal, 0x1337, 42);
+	assert_invariants (anal);
+	mu_assert_eq (blocks_count (anal), 1, "count after create");
+
+	r_anal_function_add_block (fcn, block);
+	assert_invariants (anal);
+	mu_assert_eq (block->ref, 2, "refs after adding");
+	mu_assert_eq (r_list_length (fcn->bbs), 1, "fcn bbs after add");
+	mu_assert_eq (r_list_length (block->fcns), 1, "bb fcns after add");
+
+	r_anal_delete_block (block);
+	assert_invariants (anal);
+	mu_assert_eq (block->ref, 1, "refs after delete");
+	mu_assert_eq (r_list_length (fcn->bbs), 0, "fcn bbs after delete");
+	mu_assert_eq (r_list_length (block->fcns), 0, "bb fcns after delete");
+
+	r_anal_block_unref (block);
+
+	r_anal_free (anal);
+	mu_end;
+}
+
 int all_tests() {
 	mu_run_test (test_r_anal_block_create);
 	mu_run_test (test_r_anal_block_contains);
@@ -307,6 +337,7 @@ int all_tests() {
 	mu_run_test (test_r_anal_block_split_in_function);
 	mu_run_test (test_r_anal_block_merge);
 	mu_run_test (test_r_anal_block_merge_in_function);
+	mu_run_test (test_r_anal_block_delete);
 	return tests_passed != tests_run;
 }
 
