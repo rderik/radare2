@@ -1185,7 +1185,7 @@ analopfinish:
 				if (anal->verbose) {
 					eprintf ("RET 0x%08"PFMT64x ". overlap=%s %"PFMT64u" %"PFMT64u"\n",
 						addr + delay.un_idx - oplen, r_str_bool (overlapped),
-							 bb->size, r_anal_function_linear_size (fcn));
+						bb->size, r_anal_function_linear_size (fcn));
 				}
 				gotoBeach (R_ANAL_RET_END);
 			}

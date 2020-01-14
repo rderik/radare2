@@ -308,13 +308,13 @@ R_API ut64 r_anal_function_realsize(const RAnalFunction *fcn) {
 	ut64 sz = 0;
 	if (!sz) {
 		r_list_foreach (fcn->bbs, iter, bb) {
+			sz += bb->size;
+		}
+		r_list_foreach (fcn->fcn_locs, fiter, f) {
+			r_list_foreach (f->bbs, iter, bb) {
 				sz += bb->size;
 			}
-		r_list_foreach (fcn->fcn_locs, fiter, f) {
-				r_list_foreach (f->bbs, iter, bb) {
-						sz += bb->size;
-					}
-			}
+		}
 	}
 	return sz;
 }

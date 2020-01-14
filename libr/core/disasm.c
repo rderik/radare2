@@ -1824,7 +1824,7 @@ static void ds_show_functions(RDisasmState *ds) {
 			core->cons->vline[LINE_CROSS]); // |-
 		if (!showSig) {
 			r_cons_printf ("%s%s%s %"PFMT64u, COLOR (ds, color_floc),
-						   fcn_name, COLOR_RESET (ds), r_anal_function_linear_size (f));
+					fcn_name, COLOR_RESET (ds), r_anal_function_linear_size (f));
 			ds_newline (ds);
 		}
 	} else {

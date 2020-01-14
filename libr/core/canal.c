@@ -2243,12 +2243,12 @@ repeat:
 				r_cons_printf ("%s{\"name\":\"%s\", "
 						"\"size\":%d,\"imports\":[",
 						first ? "," : "", fcni->name,
-							   r_anal_function_linear_size (fcni));
+						r_anal_function_linear_size (fcni));
 			} else {
 				r_cons_printf ("%s{\"name\":\"0x%08" PFMT64x
 						"\", \"size\":%d,\"imports\":[",
 						first ? "," : "", fcni->addr,
-							   r_anal_function_linear_size (fcni));
+						r_anal_function_linear_size (fcni));
 			}
 			first = 1;
 			break;
@@ -3060,9 +3060,6 @@ R_API int r_core_anal_fcn_list(RCore *core, const char *input, const char *rad) 
 		addr = r_num_math (core->num, name);
 	}
 
-#if NEWBBAPI
-	RList *fcns = r_anal_get_functions (core->anal, addr);
-#else
 	RList *fcns = r_list_newf (NULL);
 	if (!fcns) {
 		return -1;
@@ -3074,7 +3071,7 @@ R_API int r_core_anal_fcn_list(RCore *core, const char *input, const char *rad) 
 			r_list_append (fcns, fcn);
 		}
 	}
-#endif
+
 	// r_list_sort (fcns, &cmpfcn);
 	if (!rad) {
 		fcn_list_default (core, fcns, false);

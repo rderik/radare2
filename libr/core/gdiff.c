@@ -145,8 +145,8 @@ R_API void r_core_diff_show(RCore *c, RCore *c2) {
 				f->diff->dist = 0;
                         }
                         diffrow (f->addr, f->name, r_anal_function_linear_size (f), maxnamelen, digits,
-								 f->diff->addr, f->diff->name, f->diff->size,
-								 match, f->diff->dist, bare);
+							f->diff->addr, f->diff->name, f->diff->size,
+							match, f->diff->dist, bare);
                         break;
                 }
         }
@@ -158,8 +158,8 @@ R_API void r_core_diff_show(RCore *c, RCore *c2) {
                 case R_ANAL_FCN_TYPE_SYM:
                         if (f->diff->type == R_ANAL_DIFF_TYPE_NULL) {
                                 diffrow (f->addr, f->name, r_anal_function_linear_size (f), maxnamelen,
-										 digits, f->diff->addr, f->diff->name, f->diff->size,
-										 "NEW", 0, bare); //f->diff->dist, bare);
+									digits, f->diff->addr, f->diff->name, f->diff->size,
+									"NEW", 0, bare); //f->diff->dist, bare);
 			}
 			break;
                 }

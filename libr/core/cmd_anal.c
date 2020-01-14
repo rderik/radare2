@@ -929,7 +929,7 @@ static void flag_every_function(RCore *core) {
 	r_flag_space_push (core->flags, R_FLAGS_FS_FUNCTIONS);
 	r_list_foreach (core->anal->fcns, iter, fcn) {
 		r_flag_set (core->flags, fcn->name,
-					fcn->addr, r_anal_function_size_from_entry (fcn));
+			fcn->addr, r_anal_function_size_from_entry (fcn));
 	}
 	r_flag_space_pop (core->flags);
 }
@@ -2353,15 +2353,12 @@ static int anal_fcn_add_bb(RCore *core, const char *input) {
 	case 1: // get fcnaddr
 		fcnaddr = r_num_math (core->num, r_str_word_get0 (ptr, 0));
 	}
-	// also get by name!!
 	fcn = r_anal_get_function_at (core->anal, fcnaddr);
-//eprintf ("AT %llx = %p\n", fcnaddr, fcn);
 	if (fcn) {
 		if (!r_anal_fcn_add_bb (core->anal, fcn, addr, size, jump, fail, type, diff))
 		//if (!r_anal_fcn_add_bb_raw (core->anal, fcn, addr, size, jump, fail, type, diff))
 		{
 			eprintf ("afb+: Cannot add basic block at 0x%08"PFMT64x"\n", addr);
-// printf ("# %s\n", input);
 		}
 	} else {
 		eprintf ("afb+ Cannot find function at 0x%" PFMT64x " from 0x%08"PFMT64x" -> 0x%08"PFMT64x"\n",
@@ -2908,10 +2905,8 @@ static int cmd_anal_fcn(RCore *core, const char *input) {
 			ut64 addr = input[2]
 				? r_num_math (core->num, input + 2)
 				: core->offset;
-			if (true) {
-				r_core_anal_undefine (core, addr);
-				r_anal_fcn_del_locs (core->anal, addr);
-			}
+			r_core_anal_undefine (core, addr);
+			r_anal_fcn_del_locs (core->anal, addr);
 			r_anal_fcn_del (core->anal, addr);
 		}
 		break;
