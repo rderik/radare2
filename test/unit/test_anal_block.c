@@ -341,9 +341,6 @@ bool test_r_anal_block_set_size() {
 
 	r_anal_function_add_block (fcn, block);
 	assert_invariants (anal);
-	mu_assert_eq (block->ref, 2, "refs after adding");
-	mu_assert_eq (r_list_length (fcn->bbs), 1, "fcn bbs after add");
-	mu_assert_eq (r_list_length (block->fcns), 1, "bb fcns after add");
 
 	r_anal_block_set_size (block, 300);
 	assert_invariants (anal);
@@ -372,6 +369,71 @@ bool test_r_anal_block_set_size() {
 	mu_end;
 }
 
+bool test_r_anal_block_relocate() {
+	RAnal *anal = r_anal_new ();
+	assert_invariants (anal);
+
+	RAnalFunction *fcn = r_anal_create_function (anal, "bbowner", 0x1337, 0, NULL);
+
+	RAnalBlock *block = r_anal_create_block (anal, 0x1337, 42);
+	assert_invariants (anal);
+
+	r_anal_function_add_block (fcn, block);
+	assert_invariants (anal);
+	r_anal_function_linear_size (fcn); // trigger lazy calculation of min/max cache
+	assert_invariants (anal);
+
+	bool success = r_anal_block_relocate (block, 0x200, 0x100);
+	mu_assert ("relocate success", success);
+	assert_invariants (anal);
+	mu_assert_eq (block->addr, 0x200, "addr after relocate");
+	mu_assert_eq (block->size, 0x100, "size after relocate");
+
+	RAnalBlock *second = r_anal_create_block (anal, 0x1337+300, 100);
+	assert_invariants (anal);
+	r_anal_function_add_block (fcn, second);
+	assert_invariants (anal);
+
+	success = r_anal_block_relocate (second, 0x400, 0x123);
+	mu_assert ("relocate success", success);
+	assert_invariants (anal);
+	mu_assert_eq (second->addr, 0x400, "addr after relocate");
+	mu_assert_eq (second->size, 0x123, "size after relocate");
+	r_anal_function_linear_size (fcn); // trigger lazy calculation of min/max cache
+	assert_invariants (anal);
+
+	success = r_anal_block_relocate (block, 0x400, 0x333);
+	mu_assert ("relocate fail on same addr", !success);
+	assert_invariants (anal);
+	mu_assert_eq (block->addr, 0x200, "addr after failed relocate");
+	mu_assert_eq (block->size, 0x100, "size after failed relocate");
+	r_anal_function_linear_size (fcn); // trigger lazy calculation of min/max cache
+	assert_invariants (anal);
+
+	// jump after the other block
+	success = r_anal_block_relocate (block, 0x500, 0x333);
+	mu_assert ("relocate success", success);
+	assert_invariants (anal);
+	mu_assert_eq (block->addr, 0x500, "addr after failed relocate");
+	mu_assert_eq (block->size, 0x333, "size after failed relocate");
+	r_anal_function_linear_size (fcn); // trigger lazy calculation of min/max cache
+	assert_invariants (anal);
+
+	// jump before the other block
+	success = r_anal_block_relocate (block, 0x10, 0x333);
+	mu_assert ("relocate success", success);
+	assert_invariants (anal);
+	mu_assert_eq (block->addr, 0x10, "addr after failed relocate");
+	mu_assert_eq (block->size, 0x333, "size after failed relocate");
+
+	r_anal_block_unref (block);
+	r_anal_block_unref (second);
+	assert_invariants (anal);
+
+	r_anal_free (anal);
+	mu_end;
+}
+
 int all_tests() {
 	mu_run_test (test_r_anal_block_create);
 	mu_run_test (test_r_anal_block_contains);
@@ -381,6 +443,7 @@ int all_tests() {
 	mu_run_test (test_r_anal_block_merge_in_function);
 	mu_run_test (test_r_anal_block_delete);
 	mu_run_test (test_r_anal_block_set_size);
+	mu_run_test (test_r_anal_block_relocate);
 	return tests_passed != tests_run;
 }
 

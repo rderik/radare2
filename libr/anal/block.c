@@ -348,11 +348,20 @@ R_API bool r_anal_block_relocate(RAnalBlock *block, ut64 addr, ut64 size) {
 	RListIter *iter;
 	r_list_foreach (block->fcns, iter, fcn) {
 		if (fcn->meta._min != UT64_MAX) {
-			if (fcn->meta._max == block->addr + block->size) {
+			if (addr + size > fcn->meta._max) {
+				// we extend after the maximum, so we are the maximum afterwards.
 				fcn->meta._max = addr + size;
+			} else if (block->addr + block->size == fcn->meta._max && addr + size != block->addr + block->size) {
+				// we were the maximum before and may not be it afterwards, not trivial to recalculate.
+				fcn->meta._min = UT64_MAX;
+				continue;
 			}
-			if (fcn->meta._min == block->addr) {
+			if (block->addr < fcn->meta._min) {
+				// less than the minimum, we know that we are the minimum afterwards.
 				fcn->meta._min = addr;
+			} else if (block->addr == fcn->meta._min && addr != block->addr) {
+				// we were the minimum before and may not be it afterwards, not trivial to recalculate.
+				fcn->meta._min = UT64_MAX;
 			}
 		}
 	}
